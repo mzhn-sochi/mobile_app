@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:io';
 
 import 'package:gap/gap.dart';
 import 'package:mobile_app/api.dart';
