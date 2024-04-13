@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mobile_app/api.dart';
+// import 'package:mobile_app/providers/auth_provider.dart';
 
 class AuthClass {
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
@@ -39,12 +40,12 @@ class AuthClass {
     }
   }
 
-  Future<bool> refreshToken() async {
+  static Future<bool> refreshToken() async {
     try {
       final refreshToken = await _storage.read(key: 'refresh_token');
       if (refreshToken == null) throw Exception('Refresh token not found');
       final result = await ApiClient.refreshToken(refreshToken);
-      await _storage.write(key: 'jwt_token', value: result['jwt_token']);
+      await _storage.write(key: 'access_token', value: result['accessToken']);
       return true;
     } catch (e) {
       print('Refresh Token Error: $e');

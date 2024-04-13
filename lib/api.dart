@@ -1,6 +1,18 @@
+import 'dart:io';
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mobile_app/auth.dart';
+import 'package:mime/mime.dart';
+
+class TokenRefreshException implements Exception {
+  final String message;
+  TokenRefreshException([this.message = "Token refresh failed"]);
+
+  @override
+  String toString() => "TokenRefreshException: $message";
+}
 
 class TradePoint {
   final String title;
@@ -25,28 +37,27 @@ class TradePoint {
 class TicketInLsit {
   final String uuid;
   final String image;
-  final String title;
+  String? title;
   final String address;
-  final String status;
-  final String date;
+  final int status;
+  final int createdAt;
 
   TicketInLsit({
     required this.uuid,
     required this.image,
-    required this.title,
+    // required this.title,
     required this.address,
     required this.status,
-    required this.date,
+    required this.createdAt,
   });
 
   factory TicketInLsit.fromJson(Map<String, dynamic> json) {
     return TicketInLsit(
-      uuid: json['uuid'],
-      image: json['image'],
-      title: json['title'],
-      address: json['address'],
+      uuid: json['id'],
+      image: json['imageUrl'],
+      address: json['shopAddress'],
       status: json['status'],
-      date: json['date'],
+      createdAt: json['createdAt'],
     );
   }
 }
@@ -76,67 +87,138 @@ class ApiClient {
     );
   }
 
-  static Future<List<TicketInLsit>> fetchTicketList() {
-    final List<Map<String, dynamic>> mockData = [
-      {
-        'uuid': '',
-        'image':
-            'https://download.slipenko.com/mzhn-team-sochi/train_dataset_dnr-train/Пример%20ценников%20с%20соц%20ценой/IMG_20240329_095208778~2.jpg',
-        'title': 'Супермаркет "Молоко"',
-        'address': 'г. Макеевка ул. Ленина, 78',
-        'status': 'Обработка',
-        'date': '12.02.04'
-      },
-      {
-        'uuid': '',
-        'image':
-            'https://download.slipenko.com/mzhn-team-sochi/train_dataset_dnr-train/Пример%20ценников%20с%20соц%20ценой/IMG_20240329_095208778~2.jpg',
-        'title': 'Супермаркет "Молоко"',
-        'address': 'г. Макеевка ул. Ленина, 78',
-        'status': 'Обработка',
-        'date': '12.02.04'
-      },
-      // Добавьте больше магазинов по мере необходимости
-    ];
+  static Future<List<TicketInLsit>> fetchTicketList() async {
+    final result = await _get('v1/user/tickets/?limit=1000&offset=0');
 
-    return Future.value(
-      mockData.map((json) => TicketInLsit.fromJson(json)).toList(),
-    );
+    var tickets = List<Map<String, dynamic>>.from(result['data'])
+        .map((json) => TicketInLsit.fromJson(json))
+        .toList();
+    return tickets;
   }
 
   static Future<Map<String, dynamic>> login(
       String email, String password) async {
-    return await _post('v1/auth/sign-in', data: {'phone': email, 'password': password});
+    return await _post('v1/auth/sign-in',
+        data: {'phone': email, 'password': password});
   }
 
   static Future<Map<String, dynamic>> register(
       String phone, String password) async {
-    return await _post('v1/auth/sign-up', data: {'phone': phone, 'password': password});
+    return await _post('v1/auth/sign-up',
+        data: {'phone': phone, 'password': password});
   }
 
   static Future<Map<String, dynamic>> refreshToken(String token) async {
-    return await _post('v1/auth/refresh', data: {'refresh_token': token});
+    return await _post('v1/auth/refresh', data: {'refreshToken': token});
+  }
+
+  static Future<dynamic> createTicket(
+      File pricetagImage, String address) async {
+    Map<String, dynamic> data = {
+      'address': address,
+      'pricetag': pricetagImage,
+    };
+
+    return await _postForm('v1/tickets', data: data);
   }
 
   static Future<dynamic> _get(String endpoint) async {
-    final response = await http.get(Uri.parse('$_baseUrl/$endpoint'));
-    return _handleResponse(response);
+    final token = await AuthClass.jwtToken;
+    final response = await http.get(
+      Uri.parse('$_baseUrl/$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    // Pass 'endpoint' to handle potential retry
+    return _handleResponse(response, endpoint);
   }
 
   static Future<dynamic> _post(String endpoint,
       {required Map<String, dynamic> data}) async {
-        print('$_baseUrl/$endpoint');
+    final token = await AuthClass.jwtToken;
     final response = await http.post(
       Uri.parse('$_baseUrl/$endpoint'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
       body: jsonEncode(data),
     );
-    return _handleResponse(response);
+    // Pass 'endpoint', 'data', and indicate this is a POST request to handle potential retry
+    return _handleResponse(response, endpoint, data: data, isPost: true);
   }
 
-  static dynamic _handleResponse(http.Response response) {
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+  static Future<dynamic> _postForm(String endpoint,
+      {required Map<String, dynamic> data}) async {
+    final token = await AuthClass.jwtToken;
+    final uri = Uri.parse('$_baseUrl/$endpoint');
+
+    // Create a new multipart request
+    var request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..headers['Content-Type'] = 'multipart/form-data';
+
+    // Add fields to the request
+    data.forEach((key, value) {
+      if (value is File) {
+        // Determine the MIME type of the file
+        final mimeTypeData = lookupMimeType(value.path)?.split('/');
+        final mediaType = mimeTypeData != null && mimeTypeData.length == 2
+            ? MediaType(mimeTypeData[0], mimeTypeData[1])
+            : MediaType('application',
+                'octet-stream'); // Default MIME type if unable to detect
+
+        // Add the file as a file part
+        request.files.add(
+          http.MultipartFile(
+            key,
+            value.readAsBytes().asStream(),
+            value.lengthSync(),
+            filename: value.path.split('/').last,
+            contentType: mediaType,
+          ),
+        );
+      } else {
+        // Otherwise, add it as a field
+        request.fields[key] = value.toString();
+      }
+    });
+
+    // Send the request and wait for the response
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    // Pass 'endpoint', 'data', and indicate this is a POST request to handle potential retry
+    return _handleResponse(response, endpoint, data: data, isPost: true, isMultipart: true);
+  }
+
+  static dynamic _handleResponse(http.Response response, String endpoint,
+      {Map<String, dynamic>? data,
+      bool isPost = false,
+      bool isMultipart = false}) async {
+    if (response.statusCode == 401) {
+      // Assuming 401 means token expired
+      final refreshTokenSuccess = await AuthClass.refreshToken();
+      if (refreshTokenSuccess) {
+        if (isPost) {
+          if (isMultipart) {
+            // Retry multipart form data post
+            return _postForm(endpoint, data: data!);
+          } else {
+            // Retry regular JSON body post
+            return _post(endpoint, data: data!);
+          }
+        } else {
+          // Retry get request
+          return _get(endpoint);
+        }
+      } else {
+        throw TokenRefreshException();
+      }
+    } else if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
     } else {
       throw Exception('Failed to load data: ${response.statusCode}');
     }

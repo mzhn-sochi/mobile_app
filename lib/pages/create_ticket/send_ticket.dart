@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io';
 
 import 'package:gap/gap.dart';
+import 'package:mobile_app/api.dart';
 import 'package:mobile_app/main_page.dart';
-import 'package:mobile_app/widgets/next_button.dart'; // For simulating a delay
+import 'package:mobile_app/providers/ticket_provider.dart';
+import 'package:mobile_app/utils.dart';
+import 'package:mobile_app/widgets/next_button.dart';
+import 'package:provider/provider.dart'; // For simulating a delay
 
 class SendTicketPage extends StatefulWidget {
   const SendTicketPage({super.key});
@@ -22,8 +27,15 @@ class _SendTicketPageState extends State<SendTicketPage> {
       _isLoading = true; // Start loading
     });
 
-    // Simulate a network request delay
-    await Future.delayed(const Duration(seconds: 2));
+    final createTicketProvider = Provider.of<CreateTicketDataModel>(context, listen: false);
+
+    var address = createTicketProvider.ticketData!.tradePoint!;
+    var image = await writeToFile(createTicketProvider.ticketData!.priceTagImage!, 'tmp.jpg');
+
+    await ApiClient.createTicket(
+      image,
+      address,
+    );
 
     // Imagine this is where you'd call your actual API
     // For simulation, we just set _isSuccess to true after the delay
