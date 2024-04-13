@@ -28,12 +28,14 @@ class _SendTicketPageState extends State<SendTicketPage> {
 
     final createTicketProvider = Provider.of<CreateTicketDataModel>(context, listen: false);
 
-    var address = createTicketProvider.ticketData!.tradePoint!;
+    var shopName = createTicketProvider.ticketData!.tradePoint!;
+    var address = createTicketProvider.ticketData!.tradePointAddress!;
     var image = await writeToFile(createTicketProvider.ticketData!.priceTagImage!, 'tmp.jpg');
 
     await ApiClient.createTicket(
       image,
       address,
+      shopName,
     );
 
     // Imagine this is where you'd call your actual API

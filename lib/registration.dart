@@ -17,21 +17,21 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final phoneTextController = TextEditingController();
   final ruFormatter = RuPhoneInputFormatter();
   final passwordTextController = TextEditingController();
+  final lastNameController = TextEditingController();
+  final firstNameController = TextEditingController();
+  final middleNameController = TextEditingController();
 
-  // bool get isSendButtonEnabled => ruFormatter.isDone() && ruFormatter.isRussian;
   bool get isSendButtonEnabled =>
       ruFormatter.isDone() &&
       ruFormatter.isRussian &&
-      passwordTextController.text.isNotEmpty;
+      passwordTextController.text.isNotEmpty &&
+      lastNameController.text.isNotEmpty &&
+      firstNameController.text.isNotEmpty &&
+      middleNameController.text.isNotEmpty;
 
   String extractNumbers(String input) {
-    // This pattern matches any digit in the string
     RegExp regExp = RegExp(r'\d+');
-
-    // Finds all matches and maps them to their string value
     Iterable<String> matches = regExp.allMatches(input).map((m) => m.group(0)!);
-
-    // Joins all matched strings (digits) into one continuous string
     return matches.join();
   }
 
@@ -41,11 +41,16 @@ class _RegistrationPageState extends State<RegistrationPage> {
     BuildContext localContext = context;
 
     final success = await authProvider.register(
-        extractNumbers(phoneTextController.text), passwordTextController.text);
+        extractNumbers(phoneTextController.text), 
+        passwordTextController.text,
+        lastNameController.text,
+        firstNameController.text,
+        middleNameController.text,
+    );
 
     if (!success) {
-      ScaffoldMessenger.of(localContext).showSnackBar(
-          const SnackBar(content: Text("Ошибка регистрации, попробуйте позже")));
+      ScaffoldMessenger.of(localContext).showSnackBar(const SnackBar(
+          content: Text("Ошибка регистрации, попробуйте позже")));
     }
   }
 
@@ -59,7 +64,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
           context,
           MaterialPageRoute(builder: (context) => const MainPage()),
         );
-      });      
+      });
       return Scaffold(
         body: Container(),
       );
@@ -75,27 +80,44 @@ class _RegistrationPageState extends State<RegistrationPage> {
             child: Column(
               children: [
                 const Padding(
-                  padding: EdgeInsets.only(top: 50),
+                  padding: EdgeInsets.only(top: 10),
                   child: Text(
                     "Регистрация",
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ),
-                /*
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    "Укажите номер телефона, на него будет отправлен СМС код.",
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                */
                 const Gap(20),
+                TextFormField(
+                  controller: lastNameController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: "Фамилия",
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const Gap(10),
+                TextFormField(
+                  controller: firstNameController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: "Имя",
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const Gap(10),
+                TextFormField(
+                  controller: middleNameController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: "Отчество",
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const Gap(10),
                 TextFormField(
                   controller: phoneTextController,
                   inputFormatters: [ruFormatter],
                   keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.phone),
@@ -120,16 +142,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 5),
                   child: ElevatedButton(
-                    onPressed: isSendButtonEnabled
-                        ? () => {
-                              /*
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context) =>
-                                      const RegistrationVerificationCodePage()))
-                              */
-                              register()
-                            }
-                        : null,
+                    onPressed: isSendButtonEnabled ? register : null,
                     style: ButtonStyle(
                       minimumSize: MaterialStateProperty.all<Size>(
                           const Size.fromHeight(40)),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'dart:async';
 
 import 'package:mobile_app/api.dart';
+import 'package:mobile_app/pages/view_ticket/view_ticket.dart';
 import 'package:mobile_app/providers/auth_provider.dart';
-import 'package:mobile_app/s3image.dart';
 import 'package:mobile_app/utils.dart';
 import 'package:provider/provider.dart';
 
@@ -57,71 +58,71 @@ class _TicketListState extends State<TicketList> {
         onRefresh: () async {
           await loadTickets();
         },
-        child: ListView.builder(
+        child: ListView.separated(
           itemCount: items.length,
+          padding: EdgeInsets.all(10),
+          separatorBuilder: (BuildContext context, int index) {
+            return Gap(20);
+          },
           itemBuilder: (context, index) {
             TicketInLsit item = items[index];
 
-            var status = _getStatus(item.status);
+            var status = getTicketStatus(item.status);
+
+            String date;
+            if (item.updatedAt != null) {
+              date = formatUnixTimestamp(item.updatedAt!);
+            } else {
+              date = formatUnixTimestamp(item.createdAt);
+            }
 
             return InkWell(
               onTap: () {
                 // print('Tapped on: ${item.title}');
-              },
-              child: ListTile(
-                leading: SizedBox(
-                  height: 80.0,
-                  width: 80.0, // fixed width and height
-                  child: S3Image.get(item.image),
-                ),
-                // title: Text(item.title!, style: const TextStyle(fontSize: 20)),
-                subtitle:
-                    Text(item.address, style: const TextStyle(fontSize: 18)),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      status,
-                      style: TextStyle(
-                        color: _getStatusColor(status),
-                        fontSize: 14,
-                      ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ViewTicket(
+                      id: item.id,
                     ),
-                    Text(formatUnixTimestamp(item.createdAt),
-                        style: const TextStyle(fontSize: 14))
-                  ],
+                  ),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.all(8.0), // Add padding around the ListTile
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: Colors.grey), // Define the border color and width
+                  borderRadius: BorderRadius.circular(
+                      5.0), // Optional: if you want rounded corners
+                ),
+                child: ListTile(
+                  minVerticalPadding: 20,
+                  title: Padding(
+                    padding: const EdgeInsets.only(bottom: 10.0),
+                    child:
+                        Text(item?.shopName ?? "", style: const TextStyle(fontSize: 20)),
+                  ),
+                  subtitle:
+                      Text(item.address, style: const TextStyle(fontSize: 14)),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        status,
+                        style: TextStyle(
+                          color: getColorFromTicketStatus(status),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(date, style: const TextStyle(fontSize: 16))
+                    ],
+                  ),
                 ),
               ),
             );
           },
         ));
-  }
-
-  String _getStatus(int status) {
-    switch (status) {
-      case 0:
-      case 1:
-      case 2:
-        return 'Обработка';
-      case 3:
-        return 'Закрыт';
-      case 4:
-        return 'Отклонено';
-      default:
-        return '-';
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Обработка':
-        return Colors.orange;
-      case 'Отклонено':
-        return Colors.red;
-      case 'Закрыт':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mobile_app/auth.dart';
@@ -34,30 +33,100 @@ class TradePoint {
   }
 }
 
+enum TicketStatus {
+  waitingOCR,
+  waitingValidation,
+  waitingApproval,
+  closed,
+  rejected,
+}
+
 class TicketInLsit {
-  final String uuid;
+  final String id;
   final String image;
-  String? title;
+  final String shopName;
   final String address;
-  final int status;
+  final TicketStatus status;
   final int createdAt;
+  int? updatedAt;
 
   TicketInLsit({
-    required this.uuid,
+    required this.id,
     required this.image,
-    // required this.title,
+    required this.shopName,
     required this.address,
     required this.status,
     required this.createdAt,
+    this.updatedAt,
   });
 
   factory TicketInLsit.fromJson(Map<String, dynamic> json) {
     return TicketInLsit(
-      uuid: json['id'],
+      id: json['id'],
       image: json['imageUrl'],
+      shopName: json['shopName'],
       address: json['shopAddress'],
-      status: json['status'],
+      status: TicketStatus.values[json['status']],
       createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+    );
+  }
+}
+
+class Profile {
+  final String phone;
+  final String lastName;
+  final String firstName;
+  final String middleName;
+
+  Profile({
+    required this.phone,
+    required this.lastName,
+    required this.firstName,
+    required this.middleName,
+  });
+
+  factory Profile.fromJson(Map<String, dynamic> json) {
+    return Profile(
+      phone: json['phone'],
+      lastName: json['lastName'],
+      firstName: json['firstName'],
+      middleName: json['middleName'],
+    );
+  }
+}
+
+class TicketView {
+  final String id;
+  final String image;
+  final String shopName;
+  final String address;
+  final TicketStatus status;
+  final int createdAt;
+  int? updatedAt;
+  String? reason;
+
+  TicketView({
+    required this.id,
+    required this.image,
+    required this.shopName,
+    required this.address,
+    required this.status,
+    required this.createdAt,
+    this.updatedAt,
+    this.reason,
+  });
+
+  factory TicketView.fromJson(Map<String, dynamic> json) {
+    return TicketView(
+      id: json['id'],
+      image: json['imageUrl'],
+      shopName: json['shopName'],
+      address: json['shopAddress'],
+      status: TicketStatus.values[json['status']],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      reason: json['reason'],
     );
   }
 }
@@ -66,25 +135,18 @@ class ApiClient {
   static const String _baseUrl =
       'http://77.221.158.75:8080/api'; // Замените на ваш базовый URL
 
-  static Future<List<TradePoint>> fetchTradePoints(Position pos, int limit) {
-    // Здесь вы можете создать mock-данные или использовать фиктивные данные
-    final List<Map<String, dynamic>> mockData = [
-      {
-        "title": "Магазин 1",
-        "subtitle": "Адрес магазина 1",
-        "distance": "2.5 км",
-      },
-      {
-        "title": "Магазин 2",
-        "subtitle": "Адрес магазина 2",
-        "distance": "5 км",
-      },
-      // Добавьте больше магазинов по мере необходимости
-    ];
+  static Future<Profile> fetchProfile() async {
+    var response = await _get('v1/profile');
 
-    return Future.value(
-      mockData.map((json) => TradePoint.fromJson(json)).toList(),
-    );
+    return Profile.fromJson(response['data']);
+  }
+
+  static Future<List<TradePoint>> fetchTradePoints(
+      double longitude, double latitude, int count) async {
+    final response =
+        await _get('v1/suggestions?lon=$longitude&lat=$latitude&count=$count');
+    List<dynamic> data = response['data'];
+    return data.map((json) => TradePoint.fromJson(json)).toList();
   }
 
   static Future<List<TicketInLsit>> fetchTicketList() async {
@@ -96,16 +158,29 @@ class ApiClient {
     return tickets;
   }
 
+  
+  static Future<TicketView> fetchTicket(String id) async {
+    final response = await _get('v1/tickets/$id');
+
+    return TicketView.fromJson(response['data']);
+  }
+  
+
   static Future<Map<String, dynamic>> login(
       String email, String password) async {
     return await _post('v1/auth/sign-in',
         data: {'phone': email, 'password': password});
   }
 
-  static Future<Map<String, dynamic>> register(
-      String phone, String password) async {
-    return await _post('v1/auth/sign-up',
-        data: {'phone': phone, 'password': password});
+  static Future<Map<String, dynamic>> register(String phone, String password,
+      String lastName, String firstName, String middleName) async {
+    return await _post('v1/auth/sign-up', data: {
+      'phone': phone,
+      'password': password,
+      'lastName': lastName,
+      'firstName': firstName,
+      'middleName': middleName
+    });
   }
 
   static Future<Map<String, dynamic>> refreshToken(String token) async {
@@ -113,10 +188,11 @@ class ApiClient {
   }
 
   static Future<dynamic> createTicket(
-      File pricetagImage, String address) async {
+      File pricetagImage, String address, String shopName) async {
     Map<String, dynamic> data = {
       'address': address,
       'pricetag': pricetagImage,
+      'shopName': shopName,
     };
 
     return await _postForm('v1/tickets', data: data);
@@ -191,7 +267,8 @@ class ApiClient {
     final response = await http.Response.fromStream(streamedResponse);
 
     // Pass 'endpoint', 'data', and indicate this is a POST request to handle potential retry
-    return _handleResponse(response, endpoint, data: data, isPost: true, isMultipart: true);
+    return _handleResponse(response, endpoint,
+        data: data, isPost: true, isMultipart: true);
   }
 
   static dynamic _handleResponse(http.Response response, String endpoint,

@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
-import 'package:mobile_app/pages/send_request/send_photo.dart';
 
 class ConfigurableCrop extends StatefulWidget {
   final String imagePath;
@@ -40,13 +39,6 @@ class _ConfigurableCropState extends State<ConfigurableCrop> {
   }
 
   void _navigateToNextScreen() async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SendPhotoPage(imageBytes: _croppedData!),
-      ),
-    );
-
     Navigator.popUntil(
         context, ModalRoute.withName("SelectPhotoStep")
     );

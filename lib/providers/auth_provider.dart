@@ -1,12 +1,15 @@
 import 'package:flutter/foundation.dart';
+import 'package:mobile_app/api.dart';
 import 'package:mobile_app/auth.dart';
 
 class AuthProvider extends ChangeNotifier {
   bool _isLoggedIn = false;
   bool _isReady = false;
+  Profile? _profile;
 
   bool get isLoggedIn => _isLoggedIn;
   bool get isReady => _isReady;
+  Profile? get profile => _profile;
 
   set isLoggedIn(bool value) {
     _isLoggedIn = value;
@@ -20,7 +23,15 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> initializeApp() async {
     await checkCurrentToken();
+    if (_isLoggedIn) {
+      await fetchProfile();
+    }
     isReady = true;
+  }
+
+  Future<void> fetchProfile() async {
+    _profile = await ApiClient.fetchProfile();
+    notifyListeners();
   }
 
   Future<bool> login(String phone, String password) async {
@@ -29,8 +40,8 @@ class AuthProvider extends ChangeNotifier {
     return success;
   }
 
-  Future<bool> register(String phone, String password) async {
-    bool success = await AuthClass.register(phone, password);
+  Future<bool> register(String phone, String password, String lastName, String firstName, String middleName) async {
+    bool success = await AuthClass.register(phone, password, lastName, firstName, middleName);
     isLoggedIn = success;
     return success;
   }

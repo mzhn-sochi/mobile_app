@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 class TicketData {
   Uint8List? priceTagImage;
   String? tradePoint;
+  String? tradePointAddress;
 }
 
 class CreateTicketDataModel with ChangeNotifier {
@@ -14,6 +15,11 @@ class CreateTicketDataModel with ChangeNotifier {
 
   void setTradePoint(String tradePoint) {
     _ticketData.tradePoint = tradePoint;
+    notifyListeners();
+  }
+
+  void setTradePointAddress(String tradePointAddress) {
+    _ticketData.tradePointAddress = tradePointAddress;
     notifyListeners();
   }
 

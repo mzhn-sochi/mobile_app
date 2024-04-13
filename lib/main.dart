@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => AuthProvider()),
         ],
         child: MaterialApp(
-          title: 'Flutter Demo',
+          title: 'Контролируем цены вместе',
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.redAccent),
             useMaterial3: true,

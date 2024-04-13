@@ -23,9 +23,9 @@ class AuthClass {
     }
   }
 
-  static Future<bool> register(String phone, String password) async {
+  static Future<bool> register(String phone, String password, String lastName, String firstName, String middleName) async {
     try {
-      final result = await ApiClient.register(phone, password);
+      final result = await ApiClient.register(phone, password, lastName, firstName, middleName);
       print('Registration successful: $result');
 
       await _storage.write(
@@ -45,7 +45,10 @@ class AuthClass {
       final refreshToken = await _storage.read(key: 'refresh_token');
       if (refreshToken == null) throw Exception('Refresh token not found');
       final result = await ApiClient.refreshToken(refreshToken);
-      await _storage.write(key: 'access_token', value: result['accessToken']);
+      await _storage.write(
+          key: 'access_token', value: result['data']['accessToken']);
+      await _storage.write(
+          key: 'refresh_token', value: result['data']['refreshToken']);
       return true;
     } catch (e) {
       print('Refresh Token Error: $e');

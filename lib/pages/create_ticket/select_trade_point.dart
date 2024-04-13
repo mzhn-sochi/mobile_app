@@ -4,8 +4,8 @@ import 'package:mobile_app/api.dart';
 import 'package:mobile_app/pages/create_ticket/send_ticket.dart';
 import 'package:mobile_app/providers/ticket_provider.dart';
 import 'package:mobile_app/widgets/next_button.dart';
+import 'package:mobile_app/widgets/trade_point_list.dart';
 import 'package:provider/provider.dart';
-import 'package:geolocator/geolocator.dart';
 
 class SelectTradePoint extends StatefulWidget {
   const SelectTradePoint({super.key});
@@ -17,56 +17,22 @@ class SelectTradePoint extends StatefulWidget {
 class _SelectTradePointState extends State<SelectTradePoint> {
   int? selectedStoreIndex;
   List<TradePoint>? tradePoints;
-  bool isLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchTradePoints();
-  }
-
-  Future<void> _fetchTradePoints() async {
-    try {
-      final pos = await _determinePosition();
-      final fetchedTradePoints = await ApiClient.fetchTradePoints(pos, 5);
-      setState(() {
-        tradePoints = fetchedTradePoints;
-        isLoading = false;
-      });
-    } catch (e) {
-      // Handle error
-      print('Error fetching trade points: $e');
-    }
-  }
-
-  Future<Position> _determinePosition() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return Future.error('Location permissions are denied');
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
-
-    return await Geolocator.getCurrentPosition();
+  void updateTradePoints(List<TradePoint>? newTradePoints) {
+    setState(() {
+      tradePoints = newTradePoints;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final createTicketProvider = Provider.of<CreateTicketDataModel>(context);
+
+    void handleSelect(int? newIndex) {
+      setState(() {
+        selectedStoreIndex = newIndex;
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -91,34 +57,24 @@ class _SelectTradePointState extends State<SelectTradePoint> {
             const MaxGap(30),
             Expanded(
               flex: 8,
-              child: isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : ListView.builder(
-                      itemCount: tradePoints?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        final tradePoint = tradePoints![index];
-                        return RadioListTile<int>(
-                          title: Text(
-                              tradePoint.title), // Use tradePoint data here
-                          subtitle: Text(
-                              "${tradePoint.subtitle}\n${tradePoint.distance}"), // Use tradePoint data here
-                          value: index,
-                          groupValue: selectedStoreIndex,
-                          onChanged: (int? value) {
-                            setState(() {
-                              selectedStoreIndex = value;
-                            });
-                          },
-                        );
-                      },
-                    ),
+              child: TradePointList(
+                selectedStoreIndex: selectedStoreIndex,
+                onSelect: handleSelect,
+                onUpdateTradePoints: updateTradePoints,
+              ),
             ),
             NextButton(
-                onPressed: selectedStoreIndex == null
+                onPressed: selectedStoreIndex == null ||
+                        tradePoints == null ||
+                        tradePoints!.isEmpty
                     ? null
                     : () {
+                        createTicketProvider.setTradePointAddress(
+                            tradePoints![selectedStoreIndex!]
+                                .subtitle
+                                .split('·')[1]
+                                .trim());
+
                         createTicketProvider.setTradePoint(
                             tradePoints![selectedStoreIndex!].title);
 

@@ -73,7 +73,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   Future<void> _loadMedia() async {
     final ps = await PhotoManager.requestPermissionExtend();
-    print(ps);
     if (ps.isAuth) {
       // Получаем альбомы
       List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
@@ -107,9 +106,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   void _navigateToNextScreen(String imagePath) async {
-
-    print(imagePath);
-
     Navigator.push(
       context,
       MaterialPageRoute(

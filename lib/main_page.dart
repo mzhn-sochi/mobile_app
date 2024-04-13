@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:mobile_app/login.dart';
 import 'package:mobile_app/pages/create_ticket/select_photo_step.dart';
 import 'package:mobile_app/providers/auth_provider.dart';
@@ -16,7 +17,6 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int currentPageIndex = 0;
-   
 
   @override
   void initState() {
@@ -25,7 +25,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context); 
+    final authProvider = Provider.of<AuthProvider>(context);
 
     if (!authProvider.isLoggedIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,8 +40,25 @@ class _MainPageState extends State<MainPage> {
     }
 
     return Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: null,
+          backgroundColor: Colors.white,
+          title: const Text(
+            'Контролируем цены вместе',
+            style: TextStyle(color: Colors.black87),
+          ),
+        ),
         body: <Widget>[
-          const Expanded(child: TicketList()),
+          const Column(children: [
+            Gap(20),
+            Text(
+              "Ваши жалобы",
+              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+            ),
+            Gap(20),
+            Expanded(child: TicketList())
+          ]),
           const Card(),
           const ProfileTab(),
         ][currentPageIndex],
