@@ -107,7 +107,8 @@ class TicketView {
   String? reason;
 
   String? itemName;
-  String? itemPrice;
+  int? itemPrice;
+  int? itemOverprice;
 
   TicketView({
     required this.id,
@@ -119,7 +120,8 @@ class TicketView {
     this.updatedAt,
     this.reason,
     this.itemName,
-    this.itemPrice
+    this.itemPrice, 
+    this.itemOverprice
   });
 
   factory TicketView.fromJson(Map<String, dynamic> json) {
@@ -134,6 +136,7 @@ class TicketView {
       reason: json['reason'],
       itemName: json['item']?['name'],
       itemPrice: json['item']?['price'],
+      itemOverprice: json['item']?['overprice'],
     );
   }
 }

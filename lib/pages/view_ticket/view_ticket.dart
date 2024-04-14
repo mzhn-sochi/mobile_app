@@ -88,6 +88,9 @@ class _ViewTicketState extends State<ViewTicket> {
                     if (ticketData!.itemPrice != null) ...[
                       Text('Цена товара: ${ticketData!.itemPrice}')
                     ],
+                    if (ticketData!.itemOverprice != null) ...[
+                      Text('Цена товара завышена на: ${ticketData!.itemOverprice}%')
+                    ],
                     Text('Статус: ${getTicketStatus(ticketData!.status)}',
                         style: const TextStyle(fontSize: 20)),
                     if (ticketData!.reason != null) ...[
