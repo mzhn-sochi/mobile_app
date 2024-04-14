@@ -106,6 +106,9 @@ class TicketView {
   int? updatedAt;
   String? reason;
 
+  String? itemName;
+  String? itemPrice;
+
   TicketView({
     required this.id,
     required this.image,
@@ -115,6 +118,8 @@ class TicketView {
     required this.createdAt,
     this.updatedAt,
     this.reason,
+    this.itemName,
+    this.itemPrice
   });
 
   factory TicketView.fromJson(Map<String, dynamic> json) {
@@ -127,6 +132,8 @@ class TicketView {
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
       reason: json['reason'],
+      itemName: json['item']?['name'],
+      itemPrice: json['item']?['price'],
     );
   }
 }

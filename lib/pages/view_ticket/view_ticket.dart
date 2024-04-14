@@ -1,9 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:mobile_app/api.dart';
-import 'package:mobile_app/providers/ticket_provider.dart';
 import 'package:mobile_app/s3image.dart';
 import 'package:mobile_app/utils.dart';
 
@@ -85,6 +82,12 @@ class _ViewTicketState extends State<ViewTicket> {
                         style: const TextStyle(fontSize: 20)),
                     Text('Дата обновления заявки: $date',
                         style: const TextStyle(fontSize: 20)),
+                    if (ticketData!.itemName != null) ...[
+                      Text('Категория товара: ${ticketData!.itemName}')
+                    ],
+                    if (ticketData!.itemPrice != null) ...[
+                      Text('Цена товара: ${ticketData!.itemPrice}')
+                    ],
                     Text('Статус: ${getTicketStatus(ticketData!.status)}',
                         style: const TextStyle(fontSize: 20)),
                     if (ticketData!.reason != null) ...[
