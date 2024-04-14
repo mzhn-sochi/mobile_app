@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -107,7 +108,7 @@ class TicketView {
   String? reason;
 
   String? itemName;
-  int? itemPrice;
+  double? itemPrice;
   int? itemOverprice;
 
   TicketView({
@@ -134,8 +135,8 @@ class TicketView {
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
       reason: json['reason'],
-      itemName: json['item']?['name'],
-      itemPrice: json['item']?['price'],
+      itemName: json['item']?['product'],
+      itemPrice: json['item']?['price'] != null ? double.parse(json['item']['price'].toString()) : null,
       itemOverprice: json['item']?['overprice'],
     );
   }

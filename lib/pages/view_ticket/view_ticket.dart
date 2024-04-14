@@ -83,13 +83,13 @@ class _ViewTicketState extends State<ViewTicket> {
                     Text('Дата обновления заявки: $date',
                         style: const TextStyle(fontSize: 20)),
                     if (ticketData!.itemName != null) ...[
-                      Text('Категория товара: ${ticketData!.itemName}')
+                      Text('Категория товара: ${ticketData!.itemName}', style: const TextStyle(fontSize: 20))
                     ],
                     if (ticketData!.itemPrice != null) ...[
-                      Text('Цена товара: ${ticketData!.itemPrice}')
+                      Text('Цена товара: ${ticketData!.itemPrice}', style: const TextStyle(fontSize: 20))
                     ],
                     if (ticketData!.itemOverprice != null) ...[
-                      Text('Цена товара завышена на: ${ticketData!.itemOverprice}%')
+                      Text('Цена товара завышена на: ${ticketData!.itemOverprice}%', style: const TextStyle(fontSize: 20))
                     ],
                     Text('Статус: ${getTicketStatus(ticketData!.status)}',
                         style: const TextStyle(fontSize: 20)),
